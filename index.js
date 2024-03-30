@@ -6,7 +6,7 @@ const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
-const port = process.env.PORT || 8000
+const port = process.env.PORT || 5000
 
 // middleware
 const corsOptions = {
@@ -46,6 +46,9 @@ const client = new MongoClient(uri, {
 })
 async function run() {
   try {
+
+    const usersCollection = client.db('stayVista-24-Db').collection('users')
+
     // auth related api
     app.post('/jwt', async (req, res) => {
       const user = req.body
@@ -79,13 +82,18 @@ async function run() {
     })
 
     // Save or modify user email, status in DB
+
+    app.get('/users', async (req, res) => {
+      const result = await usersCollection.find().toArray()
+      res.send(result)
+    })
+
     app.put('/users/:email', async (req, res) => {
       const email = req.params.email
       const user = req.body
       const query = { email: email }
       const options = { upsert: true }
       const isExist = await usersCollection.findOne(query)
-      console.log('User found?----->', isExist)
       if (isExist) return res.send(isExist)
       const result = await usersCollection.updateOne(
         query,
