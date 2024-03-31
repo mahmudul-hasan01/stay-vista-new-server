@@ -109,6 +109,11 @@ async function run() {
       res.send(result)
     })
 
+    app.get('/room/:id', async (req, res) => {
+      const id = req.params.id
+      const result = await roomsCollection.findOne({_id: new ObjectId(id)})
+      res.send(result)
+    })
 
 
 
