@@ -115,6 +115,11 @@ async function run() {
       res.send(result)
     })
 
+    app.post('/room', async (req, res) => {
+      const room = req.body
+      const result = await roomsCollection.insertOne(room)
+      res.send(result)
+    })
 
 
     await client.db('admin').command({ ping: 1 })
