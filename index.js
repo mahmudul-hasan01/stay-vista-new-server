@@ -48,6 +48,7 @@ async function run() {
 
     const usersCollection = client.db('stayVista-24-Db').collection('users')
     const roomsCollection = client.db('stayVista-24-Db').collection('rooms')
+    const bookingsCollection = client.db('stayVista-24-Db').collection('bookings')
 
     // auth related api
     app.post('/jwt', async (req, res) => {
@@ -146,6 +147,13 @@ async function run() {
         payment_method_types: ['card'],
       })
       res.send({ clientSecret: client_secret })
+    })
+
+    // Save booking info in booking collection
+    app.post('/bookings', verifyToken, async (req, res) => {
+      const booking = req.body
+      const result = await bookingsCollection.insertOne(booking)
+      res.send(result)
     })
 
 
