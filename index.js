@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KYE)
 const port = process.env.PORT || 5000
 
 // middleware
@@ -85,6 +86,12 @@ async function run() {
       res.send(result)
     })
 
+    app.get('/user/:email', async (req, res) => {
+      const email = req.params.email
+      const result = await usersCollection.findOne({ email })
+      res.send(result)
+    })
+
     app.put('/users/:email', async (req, res) => {
       const email = req.params.email
       const user = req.body
@@ -111,13 +118,13 @@ async function run() {
 
     app.get('/rooms/:email', async (req, res) => {
       const email = req.params.email
-      const result = await roomsCollection.find({'host.email': (email)}).toArray()
+      const result = await roomsCollection.find({ 'host.email': (email) }).toArray()
       res.send(result)
     })
 
     app.get('/room/:id', async (req, res) => {
       const id = req.params.id
-      const result = await roomsCollection.findOne({_id: new ObjectId(id)})
+      const result = await roomsCollection.findOne({ _id: new ObjectId(id) })
       res.send(result)
     })
 
@@ -125,6 +132,20 @@ async function run() {
       const room = req.body
       const result = await roomsCollection.insertOne(room)
       res.send(result)
+    })
+
+    // payment intent
+
+    app.post('/payment-intent', verifyToken, async (req, res) => {
+      const { price } = req.body
+      const amount = parseInt(price * 100)
+      if (!price || amount < 1) return
+      const { client_secret } = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card'],
+      })
+      res.send({ clientSecret: client_secret })
     })
 
 
