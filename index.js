@@ -50,6 +50,18 @@ async function run() {
     const roomsCollection = client.db('stayVista-24-Db').collection('rooms')
     const bookingsCollection = client.db('stayVista-24-Db').collection('bookings')
 
+    // Role verification middlewares
+    // For admins
+    const verifyAdmin = async (req, res, next) => {
+      const user = req.user
+      console.log('user from verify admin', user)
+      const query = { email: user?.email }
+      const result = await usersCollection.findOne(query)
+      if (!result || result?.role !== 'admin')
+        return res.status(401).send({ message: 'unauthorized access' })
+      next()
+    }
+
     // auth related api
     app.post('/jwt', async (req, res) => {
       const user = req.body
@@ -88,8 +100,8 @@ async function run() {
       res.send(result)
     })
 
-     // Update user role
-     app.put('/users/update/:email', verifyToken, async (req, res) => {
+    // Update user role
+    app.put('/users/update/:email', verifyToken, async (req, res) => {
       const email = req.params.email
       const user = req.body
       const query = { email: email }
@@ -116,7 +128,21 @@ async function run() {
       const query = { email: email }
       const options = { upsert: true }
       const isExist = await usersCollection.findOne(query)
-      if (isExist) return res.send(isExist)
+
+      if (isExist) {
+        if (user?.status === 'Requested') {
+          const result = await usersCollection.updateOne(
+            query,
+            {
+              $set: user,
+            },
+            options
+          )
+          return res.send(result)
+        } else {
+          return res.send(isExist)
+        }
+      }
       const result = await usersCollection.updateOne(
         query,
         {
@@ -126,6 +152,7 @@ async function run() {
       )
       res.send(result)
     })
+
 
     // rooms
 
@@ -197,7 +224,7 @@ async function run() {
 
     // get all bookings for host
     app.get('/bookings/host', verifyToken, async (req, res) => {
-    const result = await bookingsCollection.find().toArray()
+      const result = await bookingsCollection.find().toArray()
       res.send(result)
     })
 
