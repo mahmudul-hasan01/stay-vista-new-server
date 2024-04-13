@@ -82,8 +82,25 @@ async function run() {
 
     // Save or modify user email, status in DB
 
-    app.get('/users', async (req, res) => {
+    // Get all users
+    app.get('/users', verifyToken, async (req, res) => {
       const result = await usersCollection.find().toArray()
+      res.send(result)
+    })
+
+     // Update user role
+     app.put('/users/update/:email', verifyToken, async (req, res) => {
+      const email = req.params.email
+      const user = req.body
+      const query = { email: email }
+      const options = { upsert: true }
+      const updateDoc = {
+        $set: {
+          ...user,
+          timestamp: Date.now(),
+        },
+      }
+      const result = await usersCollection.updateOne(query, updateDoc, options)
       res.send(result)
     })
 
@@ -166,6 +183,21 @@ async function run() {
         },
       }
       const result = await roomsCollection.updateOne(query, updateDoc)
+      res.send(result)
+    })
+
+    // get all bookings for guest
+    app.get('/bookings', verifyToken, async (req, res) => {
+      const email = req.query.email
+      if (!email) return res.send([])
+      const query = { 'guest.email': email }
+      const result = await bookingsCollection.find(query).toArray()
+      res.send(result)
+    })
+
+    // get all bookings for host
+    app.get('/bookings/host', verifyToken, async (req, res) => {
+    const result = await bookingsCollection.find().toArray()
       res.send(result)
     })
 
